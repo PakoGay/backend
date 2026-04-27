@@ -14,13 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
-
     private final AuthService authService;
-
     public AuthController(AuthService authService) {
         this.authService = authService;
     }
-
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public AuthService.AuthTokens register(@Valid @RequestBody RegisterRequest request) {
@@ -48,11 +45,9 @@ public class AuthController {
             @NotBlank @Email @Size(max = 180) String email,
             @NotBlank @Size(min = 8, max = 120) String password
     ) {}
-
     public record LoginRequest(
             @NotBlank @Email String email,
             @NotBlank String password
     ) {}
-
     public record RefreshRequest(@NotBlank String refreshToken) {}
 }
