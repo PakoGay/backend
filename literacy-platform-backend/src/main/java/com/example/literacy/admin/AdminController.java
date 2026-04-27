@@ -14,11 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminController {
 
     private final AdminService adminService;
-
     public AdminController(AdminService adminService) {
         this.adminService = adminService;
     }
-
     @GetMapping("/stats")
     public AdminService.Stats stats() {
         return adminService.stats();
@@ -30,7 +28,6 @@ public class AdminController {
         PageResponse<AdminActivityLog> response = adminService.logs(page, size);
         return new PageResponse<>(response.content().stream().map(LogResponse::from).toList(), response.page(), response.size(), response.totalElements(), response.totalPages());
     }
-
     public record LogResponse(Long id, String action, String entityType, Long entityId, String details, java.time.OffsetDateTime createdAt) {
         static LogResponse from(AdminActivityLog log) { return new LogResponse(log.getId(), log.getAction(), log.getEntityType(), log.getEntityId(), log.getDetails(), log.getCreatedAt()); }
     }
