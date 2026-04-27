@@ -25,15 +25,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1")
 public class ChildController {
-
     private final ChildService childService;
     private final CurrentUserFacade currentUserFacade;
-
     public ChildController(ChildService childService, CurrentUserFacade currentUserFacade) {
         this.childService = childService;
         this.currentUserFacade = currentUserFacade;
     }
-
     @GetMapping("/children")
     public List<ChildResponse> myChildren() {
         return childService.myChildren(currentUserFacade.currentUser()).stream().map(ChildResponse::from).toList();

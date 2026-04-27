@@ -18,11 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 public class ChildService {
-
     private final ChildProfileRepository childProfileRepository;
     private final LessonCompletionRepository lessonCompletionRepository;
     private final BadgeAwardRepository badgeAwardRepository;
-
     public ChildService(ChildProfileRepository childProfileRepository,
                         LessonCompletionRepository lessonCompletionRepository,
                         BadgeAwardRepository badgeAwardRepository) {
