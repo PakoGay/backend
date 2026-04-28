@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourcePerFileMappings">
+    <file url="file://$PROJECT_DIR$/V4_exercise_sibmissons.sql" value="bc90abd5-0138-43fa-8d99-944cf515d2c1" />
     <file url="file://$PROJECT_DIR$/literacy-platform-backend/src/main/resources/db/migration/V1__init.sql" value="bc90abd5-0138-43fa-8d99-944cf515d2c1" />
     <file url="file://$PROJECT_DIR$/literacy-platform-backend/src/main/resources/db/migration/V2__create_admin_activity_logs_if_missing.sql" value="bc90abd5-0138-43fa-8d99-944cf515d2c1" />
     <file url="file://$PROJECT_DIR$/literacy-platform-backend/src/main/resources/db/migration/V3__repair_existing_postgres_schema.sql" value="bc90abd5-0138-43fa-8d99-944cf515d2c1" />
