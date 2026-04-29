@@ -1,5 +1,4 @@
 package com.example.literacy.security;
-
 import com.example.literacy.common.config.AppProperties;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import java.nio.charset.StandardCharsets;
