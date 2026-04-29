@@ -4,14 +4,9 @@ import com.example.literacy.auth.model.UserAccount;
 import com.example.literacy.child.ChildService;
 import com.example.literacy.security.CurrentUserFacade;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
+import org.springframework.web.bind.annotation.*;
 import java.util.List;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/parents")
@@ -41,17 +36,20 @@ public class ParentController {
 
     @GetMapping("/me/children")
     public List<ChildSummary> myChildren() {
-        return childService.myChildren(currentUserFacade.currentUser()).stream().map(ChildSummary::from).toList();
+        return childService
+                .myChildren(currentUserFacade.currentUser(), 0, 100)
+                .content()
+                .stream()
+                .map(ChildSummary::from)
+                .toList();
     }
 
     public record UpdateParentRequest(@NotBlank @Size(max = 120) String name, boolean audioEnabled) {}
-
     public record ParentResponse(Long id, String name, String email, String role, boolean audioEnabled) {
         static ParentResponse from(UserAccount user) {
             return new ParentResponse(user.getId(), user.getName(), user.getEmail(), user.getRole().name(), user.isAudioEnabled());
         }
     }
-
     public record ChildSummary(Long id, String name, int age, String avatar, int level, int xp, int dailyStreak, int progressPercent) {
         static ChildSummary from(com.example.literacy.child.model.ChildProfile child) {
             return new ChildSummary(child.getId(), child.getName(), child.getAge(), child.getAvatar(), child.getCurrentLevel(), child.getXp(), child.getDailyStreak(), child.getProgressPercent());

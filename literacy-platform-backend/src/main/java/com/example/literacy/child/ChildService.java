@@ -14,6 +14,7 @@ import com.example.literacy.gamification.repository.LessonCompletionRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
 
 @Service
 @Transactional
@@ -21,6 +22,7 @@ public class ChildService {
     private final ChildProfileRepository childProfileRepository;
     private final LessonCompletionRepository lessonCompletionRepository;
     private final BadgeAwardRepository badgeAwardRepository;
+
     public ChildService(ChildProfileRepository childProfileRepository,
                         LessonCompletionRepository lessonCompletionRepository,
                         BadgeAwardRepository badgeAwardRepository) {
@@ -29,8 +31,11 @@ public class ChildService {
         this.badgeAwardRepository = badgeAwardRepository;
     }
 
-    public java.util.List<ChildProfile> myChildren(UserAccount parent) {
-        return childProfileRepository.findByParentIdOrderByNameAsc(parent.getId());
+    public PageResponse<ChildProfile> myChildren(UserAccount parent, int page, int size) {
+        if (parent.getRole() == UserRole.ADMIN) {
+            return PageResponse.from(childProfileRepository.findAll(PageRequest.of(page, size)));
+        }
+        return PageResponse.from(childProfileRepository.findByParentIdOrderByNameAsc(parent.getId(), PageRequest.of(page, size)));
     }
 
     public ChildProfile create(UserAccount parent, String name, int age, String avatar, int startingLevel) {
@@ -62,12 +67,12 @@ public class ChildService {
         childProfileRepository.delete(resolveOwned(currentUser, childId));
     }
 
-    public java.util.List<LessonCompletion> progress(UserAccount currentUser, Long childId) {
+    public List<LessonCompletion> progress(UserAccount currentUser, Long childId) {
         ChildProfile child = resolveOwned(currentUser, childId);
         return lessonCompletionRepository.findByChildIdOrderByCompletedAtDesc(child.getId());
     }
 
-    public java.util.List<BadgeAward> badges(UserAccount currentUser, Long childId) {
+    public List<BadgeAward> badges(UserAccount currentUser, Long childId) {
         ChildProfile child = resolveOwned(currentUser, childId);
         return badgeAwardRepository.findByChildIdOrderByAwardedAtDesc(child.getId());
     }

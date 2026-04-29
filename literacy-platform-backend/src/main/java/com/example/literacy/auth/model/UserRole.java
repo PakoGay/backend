@@ -4,4 +4,4 @@ public enum UserRole {
     PARENT,
     CHILD,
     ADMIN
-}
+} 
