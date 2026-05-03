@@ -1,7 +1,12 @@
 package com.example.literacy.security;
+
 import com.example.literacy.common.config.AppProperties;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
 import java.util.List;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -9,6 +14,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -42,8 +49,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**", "/docs/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/leaderboard").hasAnyRole("PARENT", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/units", "/api/v1/lessons", "/api/v1/lessons/*/exercises").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/units/**", "/api/v1/lessons/**", "/api/v1/exercises/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/units/**", "/api/v1/lessons/**", "/api/v1/exercises/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/children/**", "/api/v1/parents/**", "/api/v1/notifications/**", "/api/v1/leaderboard").hasAnyRole("PARENT", "ADMIN")
+                        .requestMatchers("/api/v1/units/**", "/api/v1/lessons/**", "/api/v1/exercises/**").hasAnyRole("PARENT", "ADMIN")
                         .anyRequest().authenticated())
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> writeSecurityError(response, request, HttpStatus.UNAUTHORIZED, "Authentication required"))
+                        .accessDeniedHandler((request, response, accessDeniedException) -> writeSecurityError(response, request, HttpStatus.FORBIDDEN, "Access denied")))
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
         return http.build();
     }
@@ -94,5 +108,16 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private void writeSecurityError(HttpServletResponse response, HttpServletRequest request, HttpStatus status, String message) throws IOException {
+        response.setStatus(status.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.getWriter().write("{\"timestamp\":\"" + OffsetDateTime.now() + "\","
+                + "\"status\":" + status.value() + ","
+                + "\"error\":\"" + status.getReasonPhrase() + "\","
+                + "\"message\":\"" + message + "\","
+                + "\"path\":\"" + request.getRequestURI() + "\","
+                + "\"validationDetails\":null}");
     }
 }
