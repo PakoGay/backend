@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiErrorResponse> handleBusiness(BusinessException ex, HttpServletRequest request) {
-        return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request, null);
+        return build(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage(), request, null);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

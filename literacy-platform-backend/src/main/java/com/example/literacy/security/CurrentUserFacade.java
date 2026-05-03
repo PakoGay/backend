@@ -11,13 +11,20 @@ import org.springframework.stereotype.Component;
 public class CurrentUserFacade {
 
     private final UserAccountRepository userAccountRepository;
+
     public CurrentUserFacade(UserAccountRepository userAccountRepository) {
         this.userAccountRepository = userAccountRepository;
     }
+
     public UserAccount currentUser() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (!(principal instanceof Jwt jwt)) {
             throw new ResourceNotFoundException("Authenticated user not found");
+        }
+        Number userId = jwt.getClaim("userId");
+        if (userId != null) {
+            return userAccountRepository.findById(userId.longValue())
+                    .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
         }
         return userAccountRepository.findByEmailIgnoreCase(jwt.getSubject())
                 .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
