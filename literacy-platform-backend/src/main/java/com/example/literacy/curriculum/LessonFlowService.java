@@ -15,6 +15,7 @@ import com.example.literacy.gamification.repository.LessonCompletionRepository;
 import com.example.literacy.notification.NotificationService;
 import com.example.literacy.notification.model.NotificationType;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Locale;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,10 +79,7 @@ public class LessonFlowService {
         if (!lesson.isPublished() || !lesson.getUnit().isPublished()) {
             throw new BusinessException("Lesson is not available");
         }
-        boolean previousCompleted = lessonCompletionRepository.findByChildIdOrderByCompletedAtDesc(childId).stream().anyMatch(c -> {
-            Lesson completedLesson = c.getLesson();
-            return completedLesson.getUnit().getId().equals(lesson.getUnit().getId()) && completedLesson.getSortOrder() == lesson.getSortOrder() - 1;
-        });
+        boolean previousCompleted = previousPublishedLessonCompleted(childId, lesson);
         curriculumService.ensureLessonUnlocked(childId, lesson, previousCompleted);
         if (lessonCompletionRepository.existsByChildIdAndLessonId(childId, lessonId)) {
             throw new BusinessException("Lesson is already completed for this child");
@@ -109,6 +107,20 @@ public class LessonFlowService {
                     child.getName() + " completed " + lesson.getTitle() + " and earned " + outcome.completion().getXpEarned() + " XP.");
         }
         return outcome;
+    }
+
+    private boolean previousPublishedLessonCompleted(Long childId, Lesson lesson) {
+        List<Lesson> published = curriculumService.publishedLessonsInUnit(lesson.getUnit().getId());
+        for (int i = 0; i < published.size(); i++) {
+            if (published.get(i).getId().equals(lesson.getId())) {
+                if (i == 0) {
+                    return true;
+                }
+                Long previousLessonId = published.get(i - 1).getId();
+                return lessonCompletionRepository.existsByChildIdAndLessonId(childId, previousLessonId);
+            }
+        }
+        return false;
     }
 
     private String normalize(String value) {
