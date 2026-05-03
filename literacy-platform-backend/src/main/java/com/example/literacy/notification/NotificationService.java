@@ -51,4 +51,24 @@ public class NotificationService {
         return notificationRepository.existsByParentIdAndChildIdAndTypeAndCreatedAtBetween(parentId, childId,
                 NotificationType.STREAK_AT_RISK, start, end);
     }
+    public boolean alreadyHasWeeklySummaryThisWeek(Long parentId) {
+        LocalDate today = LocalDate.now();
+
+        OffsetDateTime start = today
+                .minusDays(6)
+                .atStartOfDay()
+                .atOffset(OffsetDateTime.now().getOffset());
+
+        OffsetDateTime end = today
+                .plusDays(1)
+                .atStartOfDay()
+                .atOffset(OffsetDateTime.now().getOffset());
+
+        return notificationRepository.existsByParentIdAndTypeAndCreatedAtBetween(
+                parentId,
+                NotificationType.WEEKLY_SUMMARY,
+                start,
+                end
+        );
+    }
 }
