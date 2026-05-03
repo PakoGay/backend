@@ -10,4 +10,5 @@ public interface ExerciseSubmissionRepository extends JpaRepository<ExerciseSubm
     List<ExerciseSubmission> findByChildIdAndExerciseLessonId(Long childId, Long lessonId);
     long countByChildIdAndExerciseLessonId(Long childId, Long lessonId);
     long countByChildIdAndExerciseLessonIdAndCorrectTrue(Long childId, Long lessonId);
+    void deleteByChildId(Long childId);
 }
