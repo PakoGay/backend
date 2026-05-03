@@ -1,9 +1,15 @@
 package com.example.literacy.scheduler;
+
+import com.example.literacy.auth.model.UserAccount;
 import com.example.literacy.child.model.ChildProfile;
 import com.example.literacy.child.repository.ChildProfileRepository;
+import com.example.literacy.gamification.repository.LessonCompletionRepository;
 import com.example.literacy.notification.NotificationService;
 import com.example.literacy.notification.model.NotificationType;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,13 +18,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class StreakReminderScheduler {
 
     private final ChildProfileRepository childProfileRepository;
+    private final LessonCompletionRepository lessonCompletionRepository;
     private final NotificationService notificationService;
 
-    public StreakReminderScheduler(ChildProfileRepository childProfileRepository, NotificationService notificationService) {
+    public StreakReminderScheduler(ChildProfileRepository childProfileRepository,
+                                   LessonCompletionRepository lessonCompletionRepository,
+                                   NotificationService notificationService) {
         this.childProfileRepository = childProfileRepository;
+        this.lessonCompletionRepository = lessonCompletionRepository;
         this.notificationService = notificationService;
     }
 
+    @Transactional
     @Scheduled(cron = "0 0 8 * * *")
     public void notifyStreakRisk() {
         LocalDate yesterday = LocalDate.now().minusDays(1);
@@ -41,5 +52,33 @@ public class StreakReminderScheduler {
             child.setDailyStreak(0);
             childProfileRepository.save(child);
         }
+    }
+
+    @Transactional
+    @Scheduled(cron = "0 30 9 * * MON")
+    public void sendWeeklyProgressSummaries() {
+        OffsetDateTime end = OffsetDateTime.now();
+        OffsetDateTime start = end.minusDays(7);
+        Map<Long, UserAccount> parents = new LinkedHashMap<>();
+        Map<Long, Long> completionsByParent = new LinkedHashMap<>();
+
+        for (ChildProfile child : childProfileRepository.findAll()) {
+            UserAccount parent = child.getParent();
+            parents.putIfAbsent(parent.getId(), parent);
+            long completions = lessonCompletionRepository.countByChildIdAndCompletedAtBetween(child.getId(), start, end);
+            completionsByParent.merge(parent.getId(), completions, Long::sum);
+        }
+
+        completionsByParent.forEach((parentId, completions) -> {
+            if (!notificationService.alreadyHasWeeklySummaryThisWeek(parentId)) {
+                notificationService.create(
+                        parents.get(parentId),
+                        null,
+                        NotificationType.WEEKLY_SUMMARY,
+                        "Weekly learning summary",
+                        "Your children completed " + completions + " lesson(s) this week."
+                );
+            }
+        });
     }
 }
