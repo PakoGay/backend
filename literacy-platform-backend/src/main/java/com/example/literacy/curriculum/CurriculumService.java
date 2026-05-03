@@ -2,9 +2,11 @@ package com.example.literacy.curriculum;
 
 import com.example.literacy.admin.AdminService;
 import com.example.literacy.auth.model.UserAccount;
+import com.example.literacy.auth.model.UserRole;
 import com.example.literacy.common.api.PageResponse;
 import com.example.literacy.common.exception.BusinessException;
 import com.example.literacy.common.exception.ResourceNotFoundException;
+import com.example.literacy.common.web.PageUtils;
 import com.example.literacy.curriculum.model.CurriculumUnit;
 import com.example.literacy.curriculum.model.DifficultyLevel;
 import com.example.literacy.curriculum.model.Exercise;
@@ -14,7 +16,7 @@ import com.example.literacy.curriculum.repository.CurriculumUnitRepository;
 import com.example.literacy.curriculum.repository.ExerciseRepository;
 import com.example.literacy.curriculum.repository.LessonRepository;
 import java.util.List;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +41,22 @@ public class CurriculumService {
 
     public List<CurriculumUnit> listUnits(boolean admin) {
         return admin ? curriculumUnitRepository.findAllByOrderBySortOrderAsc() : curriculumUnitRepository.findAllByPublishedTrueOrderBySortOrderAsc();
+    }
+
+    public CurriculumUnit getVisibleUnit(Long id, UserAccount user) {
+        CurriculumUnit unit = getUnit(id);
+        if (!unit.isPublished() && user.getRole() != UserRole.ADMIN) {
+            throw new ResourceNotFoundException("Unit not found");
+        }
+        return unit;
+    }
+
+    public Lesson getVisibleLesson(Long id, UserAccount user) {
+        Lesson lesson = getLesson(id);
+        if ((!lesson.isPublished() || !lesson.getUnit().isPublished()) && user.getRole() != UserRole.ADMIN) {
+            throw new ResourceNotFoundException("Lesson not found");
+        }
+        return lesson;
     }
 
     public CurriculumUnit createUnit(UserAccount admin, String title, String description, int sortOrder, boolean published) {
@@ -69,8 +87,25 @@ public class CurriculumService {
         adminService.log(admin, "DELETE", "UNIT", id, unit.getTitle());
     }
 
-    public PageResponse<Lesson> lessons(Long unitId, LessonType lessonType, DifficultyLevel difficulty, Boolean published, int page, int size) {
-        return PageResponse.from(lessonRepository.search(unitId, lessonType, difficulty, published, PageRequest.of(page, size)));
+    public PageResponse<Lesson> lessons(Long unitId, LessonType lessonType, DifficultyLevel difficulty, Boolean published, int page, int size, String sort) {
+        return PageResponse.from(lessonRepository.search(unitId, lessonType, difficulty, published, PageUtils.pageable(page, size, null, lessonSort(sort))));
+    }
+
+    private Sort lessonSort(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return Sort.by(Sort.Order.asc("unit.sortOrder"), Sort.Order.asc("sortOrder"));
+        }
+        boolean desc = sort.startsWith("-");
+        String field = desc ? sort.substring(1) : sort;
+        String property = switch (field) {
+            case "title" -> "title";
+            case "difficulty" -> "difficulty";
+            case "baseXp" -> "baseXp";
+            case "createdAt" -> "createdAt";
+            case "sortOrder" -> "sortOrder";
+            default -> throw new IllegalArgumentException("Unsupported lesson sort field: " + field);
+        };
+        return Sort.by(desc ? Sort.Order.desc(property) : Sort.Order.asc(property));
     }
 
     public Lesson createLesson(UserAccount admin, Long unitId, String title, String description, LessonType lessonType,
@@ -112,8 +147,9 @@ public class CurriculumService {
         adminService.log(admin, "DELETE", "LESSON", lessonId, lesson.getTitle());
     }
 
-    public List<Exercise> exercises(Long lessonId) {
-        return exerciseRepository.findByLessonIdOrderByDisplayOrderAsc(lessonId);
+    public PageResponse<Exercise> exercises(Long lessonId, UserAccount user, int page, int size) {
+        getVisibleLesson(lessonId, user);
+        return PageResponse.from(exerciseRepository.findByLessonIdOrderByDisplayOrderAsc(lessonId, PageUtils.pageable(page, size, null)));
     }
 
     public Exercise createExercise(UserAccount admin, Long lessonId, LessonType exerciseType, String prompt, String correctAnswer, int displayOrder) {
@@ -149,11 +185,15 @@ public class CurriculumService {
         return lessonRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Lesson not found"));
     }
 
+    public List<Lesson> publishedLessonsInUnit(Long unitId) {
+        return lessonRepository.findByUnitIdAndPublishedTrueOrderBySortOrderAsc(unitId);
+    }
+
     public CurriculumUnit getUnit(Long id) {
         return curriculumUnitRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Unit not found"));
     }
 
-    public void ensureLessonUnlocked(Long childId, Lesson lesson, boolean alreadyCompletedPrevious) {
+    public void ensureLessonUnlocked(Long childId, Lesson lesson, boolean previousPublishedLessonCompleted) {
         List<Lesson> publishedLessons = lessonRepository.findByUnitIdAndPublishedTrueOrderBySortOrderAsc(lesson.getUnit().getId());
         if (publishedLessons.isEmpty()) {
             throw new BusinessException("The unit has no published lessons");
@@ -162,14 +202,8 @@ public class CurriculumService {
         if (first.getId().equals(lesson.getId())) {
             return;
         }
-        int index = -1;
-        for (int i = 0; i < publishedLessons.size(); i++) {
-            if (publishedLessons.get(i).getId().equals(lesson.getId())) {
-                index = i;
-                break;
-            }
-        }
-        if (index < 0 || !alreadyCompletedPrevious) {
+        boolean lessonIsPublishedInSequence = publishedLessons.stream().anyMatch(l -> l.getId().equals(lesson.getId()));
+        if (!lessonIsPublishedInSequence || !previousPublishedLessonCompleted) {
             throw new BusinessException("Lesson is locked until the previous published lesson is completed");
         }
     }
