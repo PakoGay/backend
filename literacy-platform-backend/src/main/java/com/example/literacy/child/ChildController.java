@@ -84,7 +84,6 @@ public class ChildController {
         PageResponse<BadgeAward> response = childService.badges(currentUserFacade.currentUser(), id, page, resolvedSize);
         return new PageResponse<>(response.content().stream().map(BadgeResponse::from).toList(), response.page(), response.pageSize(), response.total(), response.totalPages());
     }
-
     @GetMapping("/leaderboard")
     public PageResponse<LeaderboardEntry> leaderboard(@RequestParam int age,
                                                       @RequestParam(defaultValue = "0") int page,
@@ -94,32 +93,27 @@ public class ChildController {
         PageResponse<com.example.literacy.child.model.ChildProfile> response = childService.leaderboard(age, page, resolvedSize);
         return new PageResponse<>(response.content().stream().map(LeaderboardEntry::from).toList(), response.page(), response.pageSize(), response.total(), response.totalPages());
     }
-
     public record ChildRequest(
             @NotBlank @Size(max = 120) String name,
             @Min(3) @Max(8) int age,
             @NotBlank @Size(max = 100) String avatar,
             @Min(1) @Max(20) int startingLevel
     ) {}
-
     public record ChildResponse(Long id, String name, int age, String avatar, int startingLevel, int currentLevel, int xp, int dailyStreak, int progressPercent) {
         static ChildResponse from(com.example.literacy.child.model.ChildProfile child) {
             return new ChildResponse(child.getId(), child.getName(), child.getAge(), child.getAvatar(), child.getStartingLevel(), child.getCurrentLevel(), child.getXp(), child.getDailyStreak(), child.getProgressPercent());
         }
     }
-
     public record ProgressResponse(Long completionId, Long lessonId, String lessonTitle, double accuracy, long durationSeconds, int stars, int xpEarned, java.time.OffsetDateTime completedAt) {
         static ProgressResponse from(LessonCompletion completion) {
             return new ProgressResponse(completion.getId(), completion.getLesson().getId(), completion.getLesson().getTitle(), completion.getAccuracy(), completion.getDurationSeconds(), completion.getStars(), completion.getXpEarned(), completion.getCompletedAt());
         }
     }
-
     public record BadgeResponse(String code, String title, String description, java.time.OffsetDateTime awardedAt) {
         static BadgeResponse from(BadgeAward badge) {
             return new BadgeResponse(badge.getCode(), badge.getTitle(), badge.getDescription(), badge.getAwardedAt());
         }
     }
-
     public record LeaderboardEntry(Long childId, String displayName, int age, int xp, int level) {
         static LeaderboardEntry from(com.example.literacy.child.model.ChildProfile child) {
             String display = child.getName().length() <= 1 ? child.getName() : child.getName().charAt(0) + "***";
