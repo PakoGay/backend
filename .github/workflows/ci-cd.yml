@@ -40,11 +40,11 @@ jobs:
       run: mvn -B package --file pom.xml
       env:
         SPRING_PROFILES_ACTIVE: test
+        SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
         SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
         SPRING_DATASOURCE_USERNAME: postgres
         SPRING_DATASOURCE_PASSWORD: password
         JWT_SECRET: super-secret-key-that-is-at-least-32-characters-long
-        JWT_EXPIRATION: 86400000
 
     - name: Generate Coverage Report
       working-directory: literacy-platform-backend
