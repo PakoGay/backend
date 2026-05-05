@@ -36,13 +36,14 @@ jobs:
         cache: maven
 
     - name: Build with Maven
-      # Указываем GitHub, что нужно зайти в папку с проектом
       working-directory: literacy-platform-backend
       run: mvn -B package --file pom.xml
       env:
+        SPRING_PROFILES_ACTIVE: test
         SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
         SPRING_DATASOURCE_USERNAME: postgres
         SPRING_DATASOURCE_PASSWORD: password
+        JWT_SECRET: ${{ secrets.JWT_SECRET || 'super-secret-key-for-tests-12345' }}
 
     - name: Generate Coverage Report
       working-directory: literacy-platform-backend
