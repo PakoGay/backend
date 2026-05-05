@@ -11,12 +11,12 @@ The system supports parent onboarding, child profile management, curriculum unit
 - Spring Security
 - JWT Authentication
 - BCrypt password hashing
-- Spring Data JPA / Hibernate
+- Spring Data JPA 
 - PostgreSQL
 - H2 for local/test profile
 - Flyway database migrations
-- Swagger / OpenAPI
-- JUnit, MockMvc, JaCoCo
+- Swagger 
+- Postman
 - Docker / Docker Compose
 - GitHub Actions CI
 
@@ -31,6 +31,7 @@ The system supports parent onboarding, child profile management, curriculum unit
 - Role-based access control:
   - PARENT
   - ADMIN
+  - CHILD
 
 ### Child Profile Management
 
