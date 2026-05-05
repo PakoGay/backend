@@ -10,7 +10,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     services:
-      # Поднимаем базу данных прямо внутри GitHub Actions для тестов
       postgres:
         image: postgres:15
         env:
@@ -25,7 +24,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-    steps:
+   steps:
     - uses: actions/checkout@v4
     
     - name: Set up JDK 21
@@ -36,15 +35,14 @@ jobs:
         cache: maven
 
     - name: Build and Test
+      working-directory: literacy-platform-backend
       run: mvn clean verify
       env:
-        # Эти переменные перекроют настройки в приложении, чтобы тесты увидели базу
         SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
         SPRING_DATASOURCE_USERNAME: user
         SPRING_DATASOURCE_PASSWORD: password
         JWT_SECRET: ${{ secrets.JWT_SECRET }}
 
-  # Секция деплоя (пока закомментируй или оставь, если заполнил Secrets)
   deploy:
     needs: build
     if: github.ref == 'refs/heads/main'
