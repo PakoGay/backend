@@ -36,6 +36,8 @@ jobs:
         cache: maven
 
     - name: Build with Maven
+      # Указываем GitHub, что нужно зайти в папку с проектом
+      working-directory: literacy-platform-backend
       run: mvn -B package --file pom.xml
       env:
         SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
@@ -43,10 +45,10 @@ jobs:
         SPRING_DATASOURCE_PASSWORD: password
 
     - name: Generate Coverage Report
+      working-directory: literacy-platform-backend
       run: mvn jacoco:report
 
     - name: Check Test Coverage
+      working-directory: literacy-platform-backend
       run: |
-        # Этот скрипт проверяет, что покрытие больше 60%
-        # Если в проекте настроен jacoco-maven-plugin, это сработает
-        echo "Checking coverage..."
+        echo "Checking coverage in literacy-platform-backend..."
