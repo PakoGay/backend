@@ -1,0 +1,59 @@
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: testdb
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build and Run Tests
+        working-directory: literacy-platform-backend
+        run: mvn clean verify
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
+          SPRING_DATASOURCE_USERNAME: user
+          SPRING_DATASOURCE_PASSWORD: password
+          SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+          SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+          # Если секрет в GitHub пустой или короткий, используем дефолтный длинный ключ для тестов
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'a-very-long-secret-key-that-is-at-least-32-characters-long' }}
+          APP_SECURITY_JWT_SECRET: ${{ secrets.JWT_SECRET || 'a-very-long-secret-key-that-is-at-least-32-characters-long' }}
+          SPRING_PROFILES_ACTIVE: test
+
+# Деплой остается отключенным до пробуждения напарника
+#  deploy:
+#    needs: build-and-test
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Deploy
+#        run: echo "Waiting for SSH key..."
