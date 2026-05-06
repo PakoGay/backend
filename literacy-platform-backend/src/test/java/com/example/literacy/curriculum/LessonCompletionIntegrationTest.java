@@ -7,7 +7,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.literacy.auth.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
@@ -27,7 +26,28 @@ class LessonCompletionIntegrationTest {
 
     @Test
     void shouldCompleteFirstSeededLesson() throws Exception {
-        String accessToken = authService.login("parent@literacy.local", "Parent123!").accessToken();
+        String accessToken = authService
+                .login("parent@literacy.local", "Parent123!")
+                .accessToken();
+
+        mockMvc.perform(post("/api/v1/exercises/1/submit")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"childId":1,"answer":"A","timeTakenSeconds":12}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.correct").value(true));
+
+        mockMvc.perform(post("/api/v1/exercises/2/submit")
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"childId":1,"answer":"A","timeTakenSeconds":15}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.correct").value(true));
+
         mockMvc.perform(post("/api/v1/lessons/1/complete")
                         .header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON)
