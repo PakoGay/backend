@@ -33,7 +33,6 @@ public class GamificationService {
     public CompletionOutcome completeLesson(ChildProfile child, Lesson lesson, double accuracy, long durationSeconds) {
         int stars = calculateStars(accuracy, durationSeconds);
         int xpEarned = calculateXp(lesson.getBaseXp(), accuracy, durationSeconds);
-
         LessonCompletion completion = new LessonCompletion();
         completion.setChild(child);
         completion.setLesson(lesson);
@@ -43,7 +42,6 @@ public class GamificationService {
         completion.setXpEarned(xpEarned);
         completion.setCompletedAt(OffsetDateTime.now());
         lessonCompletionRepository.save(completion);
-
         applyStreak(child);
         child.setXp(child.getXp() + xpEarned);
         child.setCurrentLevel(Math.max(child.getStartingLevel(), (child.getXp() / 100) + 1));
