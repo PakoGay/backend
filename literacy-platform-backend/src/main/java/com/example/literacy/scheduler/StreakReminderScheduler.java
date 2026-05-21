@@ -1,15 +1,11 @@
 package com.example.literacy.scheduler;
 
 import com.example.literacy.auth.model.UserAccount;
-import com.example.literacy.child.model.ChildProfile;
 import com.example.literacy.child.repository.ChildProfileRepository;
-import com.example.literacy.gamification.repository.LessonCompletionRepository;
 import com.example.literacy.notification.NotificationService;
 import com.example.literacy.notification.model.NotificationType;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,14 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class StreakReminderScheduler {
 
     private final ChildProfileRepository childProfileRepository;
-    private final LessonCompletionRepository lessonCompletionRepository;
     private final NotificationService notificationService;
 
     public StreakReminderScheduler(ChildProfileRepository childProfileRepository,
-                                   LessonCompletionRepository lessonCompletionRepository,
                                    NotificationService notificationService) {
         this.childProfileRepository = childProfileRepository;
-        this.lessonCompletionRepository = lessonCompletionRepository;
         this.notificationService = notificationService;
     }
 
@@ -48,10 +41,7 @@ public class StreakReminderScheduler {
     @Scheduled(cron = "0 5 0 * * *")
     public void resetBrokenStreaks() {
         LocalDate yesterday = LocalDate.now().minusDays(1);
-        for (ChildProfile child : childProfileRepository.findByDailyStreakGreaterThanAndLastLessonCompletedOnBefore(0, yesterday)) {
-            child.setDailyStreak(0);
-            childProfileRepository.save(child);
-        }
+        childProfileRepository.resetDailyStreaksBefore(0, yesterday);
     }
 
     @Transactional
@@ -59,20 +49,14 @@ public class StreakReminderScheduler {
     public void sendWeeklyProgressSummaries() {
         OffsetDateTime end = OffsetDateTime.now();
         OffsetDateTime start = end.minusDays(7);
-        Map<Long, UserAccount> parents = new LinkedHashMap<>();
-        Map<Long, Long> completionsByParent = new LinkedHashMap<>();
 
-        for (ChildProfile child : childProfileRepository.findAll()) {
-            UserAccount parent = child.getParent();
-            parents.putIfAbsent(parent.getId(), parent);
-            long completions = lessonCompletionRepository.countByChildIdAndCompletedAtBetween(child.getId(), start, end);
-            completionsByParent.merge(parent.getId(), completions, Long::sum);
-        }
+        childProfileRepository.summarizeWeeklyCompletionsByParent(start, end).forEach(summary -> {
+            UserAccount parent = (UserAccount) summary[0];
+            Long completions = (Long) summary[1];
 
-        completionsByParent.forEach((parentId, completions) -> {
-            if (!notificationService.alreadyHasWeeklySummaryThisWeek(parentId)) {
+            if (!notificationService.alreadyHasWeeklySummaryThisWeek(parent.getId())) {
                 notificationService.create(
-                        parents.get(parentId),
+                        parent,
                         null,
                         NotificationType.WEEKLY_SUMMARY,
                         "Weekly learning summary",
